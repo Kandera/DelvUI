@@ -1,11 +1,10 @@
-﻿using Dalamud.Game.ClientState.Actors;
-using Dalamud.Game.ClientState.Actors.Types;
-using Dalamud.Game.ClientState.Actors.Types.NonPlayer;
-using DelvUI.Config;
-using DelvUI.Interface.GeneralElements;
+﻿using DelvUI.Interface.GeneralElements;
 using System;
-using System.Collections.Generic;
 using System.Linq;
+using Dalamud.Game.ClientState.Objects;
+using Dalamud.Game.ClientState.Objects.Enums;
+using Dalamud.Game.ClientState.Objects.Types;
+using DelvUI.Config;
 
 namespace DelvUI.Helpers
 {
@@ -23,7 +22,7 @@ namespace DelvUI.Helpers
                 && *(byte*)(npc.Address + 0x193C) != 1;
         }
 
-        public static unsafe float ActorShieldValue(Actor actor)
+        public static unsafe float ActorShieldValue(GameObject? actor)
         {
             if (actor == null)
             {
@@ -60,19 +59,24 @@ namespace DelvUI.Helpers
             return t.Seconds.ToString();
         }
 
-        public static PluginConfigColor ColorForActor(Chara actor)
+        public static PluginConfigColor ColorForActor(GameObject? actor)
         {
-            switch (actor.ObjectKind)
+            if (actor == null || actor is not Character character)
+            {
+                return GlobalColors.Instance.NPCNeutralColor;
+            }
+            
+            switch (character.ObjectKind)
             {
                 // Still need to figure out the "orange" state; aggroed but not yet attacked.
                 case ObjectKind.Player:
-                    return GlobalColors.Instance.SafeColorForJobId(actor.ClassJob.Id);
+                    return GlobalColors.Instance.SafeColorForJobId(character.ClassJob.Id);
 
-                case ObjectKind.BattleNpc when (actor.StatusFlags & StatusFlags.InCombat) == StatusFlags.InCombat:
+                case ObjectKind.BattleNpc when (character.StatusFlags & StatusFlags.InCombat) == StatusFlags.InCombat:
                     return GlobalColors.Instance.NPCHostileColor;
 
                 case ObjectKind.BattleNpc:
-                    if (!IsHostileMemory((BattleNpc)actor))
+                    if (!IsHostileMemory((BattleNpc)character))
                     {
                         return GlobalColors.Instance.NPCFriendlyColor;
                     }
@@ -82,20 +86,20 @@ namespace DelvUI.Helpers
             return GlobalColors.Instance.NPCNeutralColor;
         }
 
-        public static bool HasTankInvulnerability(Actor actor)
+        public static bool HasTankInvulnerability(BattleChara actor)
         {
-            var tankInvulnBuff = actor.StatusEffects.Where(o => o.EffectId is 810 or 1302 or 409 or 1836);
-            return tankInvulnBuff.Count() > 0;
+            var tankInvulnBuff = actor.StatusList.Where(o => o.StatusId is 810 or 1302 or 409 or 1836);
+            return tankInvulnBuff.Any();
         }
 
-        public static Actor FindTargetOfTarget(Actor target, Actor player, ActorTable actors)
+        public static GameObject? FindTargetOfTarget(GameObject target, GameObject? player, ObjectTable actors)
         {
             if (target == null)
             {
                 return null;
             }
 
-            if (target.TargetActorID == 0 && player.TargetActorID == 0)
+            if (target.TargetObjectId == 0 && player.TargetObjectId == 0)
             {
                 return player;
             }
@@ -105,7 +109,7 @@ namespace DelvUI.Helpers
             for (var i = 0; i < 200; i += 2)
             {
                 var actor = actors[i];
-                if (actor?.ActorId == target.TargetActorID)
+                if (actor?.ObjectId == target.TargetObjectId)
                 {
                     return actor;
                 }

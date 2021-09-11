@@ -1,18 +1,20 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup Label="Target">
-        <PlatformTarget>AnyCPU</PlatformTarget>
-        <TargetFramework>net48</TargetFramework>
+        <PlatformTarget>x64</PlatformTarget>
+        <TargetFramework>net5.0-windows</TargetFramework>
         <LangVersion>preview</LangVersion>
-        <Platforms>AnyCPU</Platforms>
+        <Platforms>x64</Platforms>
         <Configurations>Debug;Release</Configurations>
-        <AssemblyVersion>0.1.0.0</AssemblyVersion>
-        <FileVersion>0.1.0.0</FileVersion>
-        <InformationalVersion>1.0.0-beta1</InformationalVersion>
+        <AssemblyVersion>0.2.0.0</AssemblyVersion>
+        <FileVersion>0.2.0.0</FileVersion>
+        <InformationalVersion>0.2.0.0 (Beta2)</InformationalVersion>
+        <Nullable>enable</Nullable>
     </PropertyGroup>
 
     <!-- Assembly Configuration -->
     <PropertyGroup>
         <AssemblyName>DelvUI</AssemblyName>
+        <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
     </PropertyGroup>
 
     <!-- Build Configuration -->
@@ -26,7 +28,6 @@
         <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     </PropertyGroup>
 
-
     <!-- Release Configuration -->
     <PropertyGroup Condition="'$(Configuration)'=='Release'">
         <Deterministic>true</Deterministic>
@@ -34,7 +35,7 @@
 
     <!-- Dalamud Configuration -->
     <PropertyGroup>
-        <DalamudVersion>5.2.7.0</DalamudVersion>
+        <DalamudVersion>dev</DalamudVersion>
         <DalamudLocal>../dalamud/</DalamudLocal>
         <DalamudXIVLauncher>$(APPDATA)\XIVLauncher\addon\Hooks\$(DalamudVersion)</DalamudXIVLauncher>
     </PropertyGroup>
@@ -53,11 +54,10 @@
         <Content Include="Media\**">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
-    </ItemGroup>
-
-    <!-- Project References -->
-    <ItemGroup>
-        <ProjectReference Include="..\lib\FFXIVClientStructs\FFXIVClientStructs\FFXIVClientStructs.csproj" />
+        <None Remove="DelvUI.json" />
+        <Content Include="DelvUI.json">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
     </ItemGroup>
 
     <!-- Library References -->
@@ -65,7 +65,6 @@
         <Reference Include="Dalamud">
             <Private>false</Private>
         </Reference>
-        <Reference Include="Microsoft.CSharp" />
         <Reference Include="Newtonsoft.Json">
             <Private>false</Private>
         </Reference>
@@ -81,35 +80,18 @@
         <Reference Include="Lumina.Excel">
             <Private>false</Private>
         </Reference>
+        <Reference Include="FFXIVClientStructs">
+            <Private>false</Private>
+        </Reference>
     </ItemGroup>
 
     <!-- NuGet Packages -->
     <ItemGroup>
         <PackageReference Include="DalamudPackager" Version="2.1.2" />
-        <PackageReference Include="ILRepack" Version="2.1.0-beta1" GeneratePathProperty="true" />
     </ItemGroup>
 
-    <!-- ILRepack Task -->
-    <Target Name="ILRepack" AfterTargets="PostBuildEvent">
-        <ItemGroup>
-            <InputAssemblies Include="&quot;$(TargetPath)&quot;" />
-            <InputAssemblies Include="&quot;$(TargetDir)FFXIVClientStructs.dll&quot;" Exclude="$(TargetPath)" />
-            <InputAssemblies Include="&quot;$(TargetDir)FFXIVClientStructs.Common.dll&quot;" Exclude="$(TargetPath)" />
-            <InputAssemblies Include="&quot;$(TargetDir)Serilog.dll&quot;" Exclude="$(TargetPath)" />
-        </ItemGroup>
-        <Exec Command="$(PkgILRepack)\tools\ILRepack.exe /lib:$(DalamudLocal) /lib:$(DalamudXIVLauncher) /out:&quot;$(TargetDir)..\$(Configuration).ILMerge\$(TargetFileName)&quot; @(InputAssemblies, ' ')" />
-    </Target>
-
-    <!-- Move Media to ILMerge -->
-    <Target Name="MoveMedia" AfterTargets="ILRepack">
-        <ItemGroup>
-            <_CopyMedia Include="$(OutputPath)\Media\**\*.*" />
-        </ItemGroup>
-        <Copy SourceFiles="@(_CopyMedia)" DestinationFolder="$(TargetDir)..\$(Configuration).ILMerge\Media\%(RecursiveDir)" SkipUnchangedFiles="true" OverwriteReadOnlyFiles="true" Retries="3" RetryDelayMilliseconds="500" />
-    </Target>
-
     <!-- Dalamud Packager Task-->
-    <Target Name="DalamudPackage" AfterTargets="MoveMedia">
-        <DalamudPackager ProjectDir="$(ProjectDir)" OutputPath="$(TargetDir)..\$(Configuration).ILMerge" AssemblyName="$(AssemblyName)" MakeZip="true" />
+    <Target Name="DalamudPackage" AfterTargets="Build">
+        <DalamudPackager ProjectDir="$(ProjectDir)" OutputPath="$(TargetDir)..\$(Configuration)" AssemblyName="$(AssemblyName)" MakeZip="true" />
     </Target>
 </Project>
